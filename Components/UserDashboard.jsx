@@ -1,12 +1,13 @@
-import React from 'react'
-import ProductList from './productList.jsx'
-import DashboardNavbar from './DashboardNavbar.jsx'
+import React from 'react';
+import ProductList from './productList.jsx';
+import DashboardNavbar from './DashboardNavbar.jsx';
 
-function UserDashboard() {
+function UserDashboard({ clearCart }) {
   return (
     <>
-        <DashboardNavbar/>
+         <DashboardNavbar clearCart={clearCart} />
         <ProductList/>
+        
     </>
   )
 }
