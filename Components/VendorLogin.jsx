@@ -8,7 +8,9 @@ function VendorLogin() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm();
+  } = useForm({
+    mode:"onChange",
+  });
 
   const navigate = useNavigate(); // useNavigate hook to programmatically navigate
 
@@ -35,9 +37,25 @@ function VendorLogin() {
         }, 1000);
       }
     } catch (err) {
-      console.error(err);
-      toast.error("Login failed. Please check your credentials.");
-    }
+      console.error(err); // Log the entire error object for debugging
+      if (err.response) {
+        switch (err.response.status) {
+          case 400:
+            toast.error("Invalid input. Please check the fields and try again.");
+            break;
+          case 401:
+            toast.error("Unauthorized: Incorrect email or password.");
+            break;
+          case 500:
+            toast.error("Server error. Please try again later.");
+            break;
+          default:
+            toast.error("Not Found.");
+        }
+      } else {
+        toast.error("No response from the server. Please check your connection.");
+      }
+   }
   };
 
   return (
@@ -47,7 +65,7 @@ function VendorLogin() {
           <form onSubmit={handleSubmit(onSubmit)} method="dialog">
             {/* if there is a button in form, it will close the modal */}
             <Link
-              to="/"
+              to="/vendordashboard"
               className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
               onClick={() => document.getElementById("my_modal_4").close()}
             >
