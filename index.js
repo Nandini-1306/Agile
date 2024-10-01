@@ -9,11 +9,25 @@ const methodOverride = require('method-override');
 const cors = require('cors');
 const {v4: uuidv4} = require('uuid');
 
+const http = require('http');
+const socketIo = require('socket.io');
+const server = http.createServer(app);
+
+
 app.use(cors({
+
     origin: 'http://localhost:5173', // React app's address
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'], 
     credentials: true // 
 }));
+
+const io = socketIo(server, {
+    cors: {
+        origin: 'http://localhost:5173', // Allow your React app
+        methods: ['GET', 'POST'],
+        credentials: true // Allow credentials
+    }
+});
 
 app.use(bodyParser.json());
 
@@ -124,10 +138,7 @@ app.post('/register/vendor', (req, res) => {
     );
 });
 
-
-
-
-// Handling user login
+//user login
 app.post('/login/user', (req, res) => {
     const { userEmail, userPassword } = req.body;
 
@@ -135,7 +146,8 @@ app.post('/login/user', (req, res) => {
     console.log('Email entered:', userEmail);
     console.log('Password entered:', userPassword);
 
-    db.query('SELECT * FROM user WHERE userEmail = ? AND userPassword = ?', [userEmail, userPassword], (err, results) => {
+    // Query database to find the user by email
+    db.query('SELECT * FROM user WHERE userEmail = ?', [userEmail], (err, results) => {
         if (err) {
             console.error('Database error:', err);
             return res.status(500).json({ message: 'An error occurred, please try again.' });
@@ -143,57 +155,83 @@ app.post('/login/user', (req, res) => {
 
         console.log('Database results:', results);
 
-        if (results.length > 0) {
-            const user = results[0];
-            req.session.userID = user.userID;
-            req.session.userName = user.userName;
-            req.session.userEmail = user.userEmail;
-            req.session.userPassword = user.userPassword;
-            req.session.userAddress = user.userAddress;
-            req.session.userPhoneNumber = user.userPhoneNumber;
-            console.log('Session after login:', req.session);
-
-            res.json({ user: req.session.userName }); // Return user data
-        } else {
-            res.status(401).json({ message: 'Incorrect email or password' });
+        // If no user found with the given email
+        if (results.length === 0) {
+            return res.status(401).json({ message: 'User not found. Please sign up first.' });
         }
+
+        const user = results[0];
+
+        // Check if the provided password matches the user's password in the database
+        if (user.userPassword !== userPassword) {
+            return res.status(401).json({ message: 'Incorrect password.' });
+        }
+
+        // Store user details in the session after successful login
+        req.session.userID = user.userID;
+        req.session.userName = user.userName;
+        req.session.userEmail = user.userEmail;
+        req.session.userPassword = user.userPassword; // Avoid storing password in session for security reasons in real applications
+        req.session.userAddress = user.userAddress;
+        req.session.userPhoneNumber = user.userPhoneNumber;
+
+        console.log('Session after login:', req.session);
+
+        // Return success response with user details (excluding sensitive info like password)
+        res.status(200).json({ user: { userID: user.userID, userName: user.userName, userEmail: user.userEmail } });
     });
 });
+
 
 
 //vendor login
 app.post('/login/vendor', (req, res) => {
-    const { vendorPassword, vendorEmail } = req.body;
+    const { vendorEmail, vendorPassword } = req.body;
 
-    // Query to fetch the vendor's details based on the provided email and password
-    db.query('SELECT * FROM Vendors WHERE vendorPassword = ? AND vendorEmail = ?', [vendorPassword, vendorEmail], (err, results) => {
+    // Query to fetch the vendor's details based on the provided email
+    db.query('SELECT * FROM Vendors WHERE vendorEmail = ?', [vendorEmail], (err, results) => {
         if (err) {
-            console.error('Database error:', err); // Log database error
-            return res.send('An error occurred, please try again.');
+            console.error('Database error:', err);
+            return res.status(500).send('An error occurred, please try again.'); // Return a 500 status for server error
         }
 
-        console.log('Database results:', results);  // Log the results from the database
+        console.log('Database results:', results);
 
-        if (results.length > 0) {
-            // If login is successful, assign all relevant vendor details to session
-            const vendor = results[0];
-            req.session.vendorID = vendor.vendorID;
-            req.session.vendorName = vendor.vendorName;
-            req.session.vendorEmail = vendor.vendorEmail;
-            req.session.vendorAddress = vendor.vendorAddress;
-            req.session.vendorPhoneNumber = vendor.vendorPhoneNumber;
-            req.session.vendorPassword = vendor.vendorPassword;
-
-            console.log('Session after login:', req.session); // Log session details
-
-            // Redirect to the dashboard or another page after successful login
-            res.redirect('/');
-        } else {
-            // If no matching vendor found, send error message
-            res.send('Incorrect email or password');
+        // Check if a vendor was found
+        if (results.length === 0) {
+            return res.status(404).send('Vendor not found.'); // Return 404 if vendor doesn't exist
         }
+
+        const vendor = results[0];
+
+        // Directly compare the plaintext password
+        if (vendor.vendorPassword !== vendorPassword) {
+            return res.status(401).send('Incorrect password.'); // Return 401 if password is incorrect
+        }
+
+        // If login is successful, assign all relevant vendor details to session
+        req.session.vendorID = vendor.vendorID;
+        req.session.vendorName = vendor.vendorName;
+        req.session.vendorEmail = vendor.vendorEmail;
+        req.session.vendorAddress = vendor.vendorAddress;
+        req.session.vendorPhoneNumber = vendor.vendorPhoneNumber;
+
+        console.log('Session after login:', req.session);
+
+        // Send a success response with vendor details
+        res.status(200).json({ 
+            message: 'Login successful',
+            user: {
+                vendorID: vendor.vendorID,
+                vendorName: vendor.vendorName,
+                vendorEmail: vendor.vendorEmail,
+                vendorAddress: vendor.vendorAddress,
+                vendorPhoneNumber: vendor.vendorPhoneNumber,
+            }
+        });
     });
 });
+
 
 //home route
 app.get("/user/view" , (req,res)=>{
@@ -378,7 +416,6 @@ app.patch('/vendor/edit', (req, res) => {
 });
 
 // Route to update the total amount for the user
-// Route to update the total amount for the user
 app.post('/cart', (req, res) => {
     const userID = req.session.userID; // Access userID from session
     const { TotalAmount } = req.body; // Destructure TotalAmount from request body
@@ -406,15 +443,171 @@ app.post('/cart', (req, res) => {
         res.status(200).json({ message: 'Total amount updated successfully' });
     });
 });
+//fetch from product databse 
+app.get('/products', (req, res) => {
+    // Assuming you have a database connection set up
+    db.query('SELECT * FROM product', (err, products) => {
+        if (err) {
+            return res.status(500).json({ error: 'Failed to fetch products' });
+        }
+        res.json(products); // Send all products back as JSON
+    });
+});
+
+
+app.get('/addproduct', (req, res) => {
+    const vendorID = req.session.vendorID; // Assuming vendorID is stored in the session
+
+    if (!vendorID) {
+        return res.status(401).json({ message: 'Unauthorized. Vendor not logged in.' });
+    }
+        // Return the list of products
+        return res.status(200).jsoxn({ message: 'Products retrieved successfully',products });
+    });
+
+
+
+//addproduct route
+app.post('/addproduct', (req, res) => {
+    const { productName, price, quantity } = req.body;
+    const vendorID = req.session.vendorID; 
+    const vendorName = req.session.vendorName;
+    console.log(vendorID);
+
+    // Check if the vendor is logged in
+    if (!vendorID || !vendorName) {
+        return res.status(401).json({ message: 'Unauthorized. Vendor not logged in.' });
+    }
+
+    // Check for missing required fields
+    if (!productName || !price || !quantity) {
+        return res.status(400).json({ message: 'Missing required product fields.' });
+    }
+
+    // Check if the product already exists for this vendor
+    const queryCheckProduct = `SELECT * FROM product WHERE vendorID = ? AND productName = ?`;
+    db.query(queryCheckProduct, [vendorID, productName], (err, result) => {
+        if (err) {
+            console.error('Error querying database:', err);
+            return res.status(500).json({ message: 'Database error', error: err });
+        }
+
+        if (result.length > 0) {
+            // Product exists, update the quantity
+            const updatedQuantity = result[0].quantity + parseInt(quantity);
+            const queryUpdateProduct = `UPDATE product SET quantity = ? WHERE productID = ?`;
+
+            db.query(queryUpdateProduct, [updatedQuantity, result[0].productID], (err, updateResult) => {
+                if (err) {
+                    console.error('Error updating product quantity:', err);
+                    return res.status(500).json({ message: 'Failed to update product quantity', error: err });
+                }
+                return res.status(200).json({ message: 'Product quantity updated successfully', productID: result[0].productID });
+            });
+        } else {
+            // Product doesn't exist, insert a new product
+            const newProductID = uuidv4();
+            const queryInsertProduct = `INSERT INTO product (productID, vendorID,vendorName , productName, price, quantity) VALUES (?, ?, ?, ?, ?,?)`;
+
+            db.query(queryInsertProduct, [newProductID, vendorID,vendorName, productName, parseFloat(price), parseInt(quantity)], (err, insertResult) => {
+                if (err) {
+                    console.error('Error inserting new product:', err);
+                    return res.status(500).json({ message: 'Failed to add new product', error: err });
+                }
+                 // Emit an event to notify all connected clients about the new product
+        io.emit('newProduct', { productID: newProductID, productName, price, quantity });
+                return res.status(201).json({ message: 'New product added successfully', productID: newProductID });
+            });
+        }
+    });
+});
+//io connection 
+io.on('connection', (socket) => {
+    console.log('A user connected');
+
+    // Handle disconnection
+    socket.on('disconnect', () => {
+        console.log('A user disconnected');
+    });
+});
+
+// Route to get all products
+app.get('/products', (req, res) => {
+    console.log("helloo");
+    db.query('SELECT * FROM product', (err, results) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ message: 'An error occurred while fetching products.' });
+        }
+        res.json(results); // Return all products in JSON format
+    });
+});
+
+
+//get user id
+app.get('/check-userid/:userId', (req, res) => {
+    const userId = req.params.userId; // Get userId from URL parameters
+
+    if (!userId) {
+        return res.status(400).json({ error: 'UserID is required' });
+    }
+
+    // SQL query to check if userId exists in the database
+    const query = 'SELECT COUNT(*) AS count FROM user  WHERE userID = ?';
+
+    db.query(query, [userId], (err, results) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+
+        // If count > 0, userId exists
+        const count = results[0].count;
+        if (count > 0) {
+            res.json({ available: false, message: 'UserID already exists!' });
+        } else {
+            res.json({ available: true, message: 'UserID is available' });
+        }
+    });
+});
+
+app.get('/check-vendorid/:vendorId', (req, res) => {
+    const vendorId = req.params.vendorId; // Get userId from URL parameters
+
+    if (!vendorId) {
+        return res.status(400).json({ error: 'vendorID is required' });
+    }
+
+
+    // SQL query to check if userId exists in the database
+    const query = 'SELECT COUNT(*) AS count FROM Vendors  WHERE vendorID = ?';
+
+    db.query(query, [vendorId], (err, results) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+
+        // If count > 0, vendorId exists
+        const count = results[0].count;
+        if (count > 0) {
+            res.json({ available: false, message: 'vendorID already exists!' });
+        } else {
+            res.json({ available: true, message: 'vendorID is available' });
+        }
+    });
+});
 
 
 
 
-// Start the server
-app.listen(3000, () => {
 
+server.listen(3000, () => {
     console.log('Server is running on port 3000');
-}); 
+});
+
+
+
 
 // Logout route
 app.get('/logout', (req, res) => {
@@ -423,4 +616,5 @@ app.get('/logout', (req, res) => {
         res.redirect('/'); // Redirecting to home page after session is destroyed
     });
 });
+
 
