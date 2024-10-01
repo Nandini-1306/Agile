@@ -8,7 +8,7 @@ const Signup = () => {
     const {
         register,
         handleSubmit,
-        formState: { errors },
+        formState: { errors, touchedFields },
     } = useForm();
 
     const onSubmit = async (data) => {
@@ -40,18 +40,37 @@ const Signup = () => {
 
                         {/* UserID */}
                         <div className="mt-4 space-y-2">
-                            <span>UserId</span>
-                            <br />
+                            <span>UserID</span>
                             <input
                                 type="text"
-                                placeholder="Enter your fullID"
-                                className="w-80 px-3 py-1 border rounded-md outline-none"
-                                {...register("userID", { required: true })}
+                                placeholder="Enter your unique ID"
+                                className={`w-80 px-3 py-1 border rounded-md outline-none ${
+                                    errors.userID
+                                        ? 'border-red-500'
+                                        : touchedFields.userID && !errors.userID
+                                        ? 'border-green-500'
+                                        : 'border-gray-300'
+                                }`}
+                                {...register("userID", {
+                                    required: {
+                                        value: true,
+                                        message: "UserID is required",
+                                    },
+                                    validate: async (value) => {
+                                        try {
+                                            const response = await axios.get(
+                                                `http://localhost:3000/check-userid/${value}`
+                                            );
+                                            return response.data.available || "UserID already exists!";
+                                        } catch (error) {
+                                            return "Please enter a new UserId";
+                                        }
+                                    },
+                                })}
                             />
-                            <br />
                             {errors.userID && (
                                 <span className="text-sm text-red-500">
-                                    This field is required
+                                    {errors.userID.message}
                                 </span>
                             )}
                         </div>
@@ -59,17 +78,26 @@ const Signup = () => {
                         {/* UserName */}
                         <div className="mt-4 space-y-2">
                             <span>UserName</span>
-                            <br />
                             <input
                                 type="text"
-                                placeholder="Enter your fullname"
-                                className="w-80 px-3 py-1 border rounded-md outline-none"
-                                {...register("userName", { required: true })}
+                                placeholder="Enter your full name"
+                                className={`w-80 px-3 py-1 border rounded-md outline-none ${
+                                    errors.userName
+                                        ? 'border-red-500'
+                                        : touchedFields.userName && !errors.userName
+                                        ? 'border-green-500'
+                                        : 'border-gray-300'
+                                }`}
+                                {...register("userName", {
+                                    required: {
+                                        value: true,
+                                        message: "Full name is required",
+                                    },
+                                })}
                             />
-                            <br />
                             {errors.userName && (
                                 <span className="text-sm text-red-500">
-                                    This field is required
+                                    {errors.userName.message}
                                 </span>
                             )}
                         </div>
@@ -77,17 +105,30 @@ const Signup = () => {
                         {/* Phone No. */}
                         <div className="mt-4 space-y-2">
                             <span>Phone No.</span>
-                            <br />
                             <input
                                 type="text"
-                                placeholder="Enter your Number"
-                                className="w-80 px-3 py-1 border rounded-md outline-none"
-                                {...register("userPhoneNumber", { required: true })}
+                                placeholder="Enter your 10-digit phone number"
+                                className={`w-80 px-3 py-1 border rounded-md outline-none ${
+                                    errors.userPhoneNumber
+                                        ? 'border-red-500'
+                                        : touchedFields.userPhoneNumber && !errors.userPhoneNumber
+                                        ? 'border-green-500'
+                                        : 'border-gray-300'
+                                }`}
+                                {...register("userPhoneNumber", {
+                                    required: {
+                                        value: true,
+                                        message: "Phone number is required",
+                                    },
+                                    pattern: {
+                                        value: /^[0-9]{10}$/,
+                                        message: "Phone number must be exactly 10 digits",
+                                    },
+                                })}
                             />
-                            <br />
                             {errors.userPhoneNumber && (
                                 <span className="text-sm text-red-500">
-                                    This field is required
+                                    {errors.userPhoneNumber.message}
                                 </span>
                             )}
                         </div>
@@ -95,17 +136,26 @@ const Signup = () => {
                         {/* Address */}
                         <div className="mt-4 space-y-2">
                             <span>Address</span>
-                            <br />
                             <input
                                 type="text"
-                                placeholder="Enter your Full Address"
-                                className="w-80 px-3 py-1 border rounded-md outline-none"
-                                {...register("userAddress", { required: true })}
+                                placeholder="Enter your full address"
+                                className={`w-80 px-3 py-1 border rounded-md outline-none ${
+                                    errors.userAddress
+                                        ? 'border-red-500'
+                                        : touchedFields.userAddress && !errors.userAddress
+                                        ? 'border-green-500'
+                                        : 'border-gray-300'
+                                }`}
+                                {...register("userAddress", {
+                                    required: {
+                                        value: true,
+                                        message: "Address is required",
+                                    },
+                                })}
                             />
-                            <br />
                             {errors.userAddress && (
                                 <span className="text-sm text-red-500">
-                                    This field is required
+                                    {errors.userAddress.message}
                                 </span>
                             )}
                         </div>
@@ -113,17 +163,30 @@ const Signup = () => {
                         {/* Email */}
                         <div className="mt-4 space-y-2">
                             <span>Email</span>
-                            <br />
                             <input
                                 type="email"
                                 placeholder="Enter your email"
-                                className="w-80 px-3 py-1 border rounded-md outline-none"
-                                {...register("userEmail", { required: true })}
+                                className={`w-80 px-3 py-1 border rounded-md outline-none ${
+                                    errors.userEmail
+                                        ? 'border-red-500'
+                                        : touchedFields.userEmail && !errors.userEmail
+                                        ? 'border-green-500'
+                                        : 'border-gray-300'
+                                }`}
+                                {...register("userEmail", {
+                                    required: {
+                                        value: true,
+                                        message: "Email is required",
+                                    },
+                                    pattern: {
+                                        value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+                                        message: "Please enter a valid email address",
+                                    },
+                                })}
                             />
-                            <br />
                             {errors.userEmail && (
                                 <span className="text-sm text-red-500">
-                                    This field is required
+                                    {errors.userEmail.message}
                                 </span>
                             )}
                         </div>
@@ -131,17 +194,30 @@ const Signup = () => {
                         {/* Password */}
                         <div className="mt-4 space-y-2">
                             <span>Password</span>
-                            <br />
                             <input
                                 type="password"
-                                placeholder="Enter your password"
-                                className="w-80 px-3 py-1 border rounded-md outline-none"
-                                {...register("userPassword", { required: true })}
+                                placeholder="Enter your password (min 8 characters)"
+                                className={`w-80 px-3 py-1 border rounded-md outline-none ${
+                                    errors.userPassword
+                                        ? 'border-red-500'
+                                        : touchedFields.userPassword && !errors.userPassword
+                                        ? 'border-green-500'
+                                        : 'border-gray-300'
+                                }`}
+                                {...register("userPassword", {
+                                    required: {
+                                        value: true,
+                                        message: "Password is required",
+                                    },
+                                    minLength: {
+                                        value: 8,
+                                        message: "Password must be at least 8 characters long",
+                                    },
+                                })}
                             />
-                            <br />
                             {errors.userPassword && (
                                 <span className="text-sm text-red-500">
-                                    This field is required
+                                    {errors.userPassword.message}
                                 </span>
                             )}
                         </div>
@@ -153,7 +229,7 @@ const Signup = () => {
                             </button>
                             <div className="ml-[150px]">
                                 <p className="text-xl">
-                                    Have an account?{" "}
+                                    Have an account?{' '}
                                     <Link
                                         to="/"
                                         className="underline text-blue-500 cursor-pointer"
