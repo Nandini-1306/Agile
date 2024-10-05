@@ -1,11 +1,10 @@
 import React from 'react';
-import { Link, useNavigate} from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './cart.css';
 import { useState, useEffect } from 'react';
 
 function Cart({ cartItems, removeFromCart, clearCart }) {
-
     const navigate = useNavigate();
 
     const handleProceedToBuy = () => {
@@ -19,7 +18,10 @@ function Cart({ cartItems, removeFromCart, clearCart }) {
             },
         });
     };
-    const totalPrice = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+
+    // Filter out null items before calculating total price
+    const validItems = cartItems.filter(item => item != null);
+    const totalPrice = validItems.reduce((total, item) => total + (item.price * item.quantity), 0);
     const platformFee = 50;
     const finalTotal = totalPrice + platformFee;
 
@@ -57,7 +59,7 @@ function Cart({ cartItems, removeFromCart, clearCart }) {
                     </div>
                 ) : (
                     <div className="cart-items">
-                        {cartItems.map((item, index) => (
+                        {validItems.map((item, index) => (
                             <div key={index} className="cart-item">
                                 <img src={item.image} alt={item.name} className="cart-item-image" />
                                 <div className="cart-item-details">
