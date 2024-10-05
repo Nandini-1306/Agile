@@ -1,9 +1,13 @@
-import React, { useState, useEffect, useNavigate } from 'react';
+
+
+
+import React, { useState, useEffect } from 'react';
 import './FruitSection.css';
 import DashboardNavbar from './DashboardNavbar.jsx';
-
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { io } from 'socket.io-client';
+import { toast } from "react-hot-toast";
 
 const socket = io('http://localhost:3000');
 
@@ -11,6 +15,7 @@ function FruitSection({ addToCart, clearCart }) {
     const navigate = useNavigate();
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [quantities, setQuantities] = useState({}); // For tracking quantities of each product
 
     const fetchProducts = async () => {
         try {
@@ -18,8 +23,12 @@ function FruitSection({ addToCart, clearCart }) {
             console.log('Fetched products:', response.data);
             if (Array.isArray(response.data)) {
                 setProducts(response.data);
-            }else if(!Array.isArray(response.data)){
-                  console.log("hello");
+                // Initialize quantities to 1 for each product
+                const initialQuantities = response.data.reduce((acc, product) => {
+                    acc[product.productID] = 1;
+                    return acc;
+                }, {});
+                setQuantities(initialQuantities);
             } else {
                 console.error('Data is not an array:', response.data);
                 setProducts([]); // Reset products if not an array
@@ -54,10 +63,38 @@ function FruitSection({ addToCart, clearCart }) {
     }, []);
 
     const handleAddToCart = (product) => {
-        addToCart(product);
+        const selectedQuantity = quantities[product.productID];
+        console.log("Selected Quantity:", selectedQuantity);
+        if (selectedQuantity > product.quantity) {
+            alert('Selected quantity exceeds available stock.');
+            return; // Exit if the selected quantity is more than available
+        }
+        console.log("Adding to cart:", {
+            name: product.productName,
+            quantity: selectedQuantity,
+            price: product.price,
+        });
+    
+        addToCart({
+            name: product.productName,
+            quantity: selectedQuantity,
+            price: product.price,
+        });
         // navigate('/cart');
     };
-
+    
+    const handleQuantityChange = (productID, value) => {
+        if (value < 1) return; // Prevent negative or zero quantities
+        setQuantities((prevQuantities) => ({
+            ...prevQuantities,
+            [productID]: Math.min(value, products.find(p => p.productID === productID)?.quantity || 0) // Ensure it doesn't exceed available stock
+        }));
+    };
+    
+    <label htmlFor={`quantity-${products.productID}`} style={styles.quantityLabel}>
+        Select Quantity:
+    </label>
+    
     const handleProceedToBuy = () => {
         clearCart();
         fetchProducts(); // Refresh product list
@@ -73,21 +110,30 @@ function FruitSection({ addToCart, clearCart }) {
                 ) : products.length > 0 ? (
                     products.map((product) => (
                         <div style={styles.productCard} key={product.productID}>
-                            <h3 style={styles.productName}>{product.productName}</h3>
-                            <p style={styles.productInfo}>Price: ${product.price}</p>
-                            <p style={styles.productInfo}>Quantity: {product.quantity}</p>
-                            {product.isNew && <span style={styles.newTag}>New!</span>}
-                            <button
-                                className="add-to-cart-btn"
-                                onClick={() => handleAddToCart({
-                                    name: product.productName,
-                                    quantity: product.quantity,
-                                    price: product.price
-                                })}
-                            >
-                                Add to Cart
-                            </button>
-                        </div>
+                        <h3 style={styles.productName}>{product.productName}</h3>
+                        <p style={styles.productInfo}>Price: ₹{product.price} per piece</p>
+                        <p style={styles.productInfo}>Available Quantity: {product.quantity}</p>
+                        <label htmlFor={`quantity-${product.productID}`} style={styles.quantityLabel}>
+                            Select Quantity:
+                        </label>
+                        <input
+                            type="number"
+                            id={`quantity-${product.productID}`}
+                            min="1"
+                            max="100"
+                            value={quantities[product.productID]}
+                            onChange={(e) => handleQuantityChange(product.productID, Number(e.target.value))}
+                            style={styles.quantityInput}
+                        />
+                        {product.isNew && <span style={styles.newTag}>New!</span>}
+                        <button
+                            className="add-to-cart-btn"
+                            onClick={() => handleAddToCart(product)}
+                        >
+                            Add to Cart
+                        </button>
+                    </div>
+                    
                     ))
                 ) : (
                     <p style={styles.noProductsText}>No products available.</p>
@@ -144,6 +190,17 @@ const styles = {
         borderRadius: '5px',
         fontSize: '0.8rem',
     },
+    quantityLabel: {
+        marginRight: '10px',
+        color: 'white',
+    },
+    quantityInput: {
+        width: '50px',
+        margin: '10px 0',
+        padding: '5px',
+    },
 };
 
-export default FruitSection;
+export default FruitSection; 
+
+
