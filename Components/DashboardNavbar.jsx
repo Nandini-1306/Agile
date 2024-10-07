@@ -14,6 +14,12 @@ function DashboardNavbar({ clearCart }) {
             <li>
                 <a href="/profile">Profile</a>
             </li>
+            <li>
+                <Link to="/mysubscription">Subscription</Link>
+            </li>
+            <li>
+               <a href="/vendors/details">Reviews</a>
+            </li>
         </>
     );
 
