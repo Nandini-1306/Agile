@@ -4,15 +4,12 @@ const path = require("path"); // requiring path for static files (static files a
 const session = require('express-session'); // requiring session to store info across various pages; a session is created on login
 const app = express();    
 const bodyParser = require('body-parser');                           
-const port = 3000;
 const methodOverride = require('method-override');
 const cors = require('cors');
 const {v4: uuidv4} = require('uuid');
-
 const http = require('http');
 const socketIo = require('socket.io');
 const server = http.createServer(app);
-
 
 app.use(cors({
 
@@ -33,7 +30,6 @@ app.use(bodyParser.json());
 
 app.use(methodOverride('_method')); // This allows you to use _method to simulate PUT and PATCH
 
-
 // Middleware
 app.use(express.static(path.join(__dirname, "public"))); // Serving static files from "public" directory
 app.set("view engine", "ejs"); // Setting view engine to EJS for rendering HTML templates
@@ -52,8 +48,6 @@ app.use(session({
         
     }
 }));
-
-
 
 // Routes
 app.get('/', (req, res) => {
@@ -113,10 +107,7 @@ app.post('/register/user', (req, res) => {
         });
         
 });
-
-
-
-
+//adding new vendor
 app.post('/register/vendor', (req, res) => {
     const { vendorID, vendorName, vendorPhoneNumber, vendorAddress, vendorPassword, vendorEmail } = req.body;
 
@@ -182,8 +173,6 @@ app.post('/login/user', (req, res) => {
     });
 });
 
-
-
 //vendor login
 app.post('/login/vendor', (req, res) => {
     const { vendorEmail, vendorPassword } = req.body;
@@ -232,7 +221,6 @@ app.post('/login/vendor', (req, res) => {
     });
 });
 
-
 //home route
 app.get("/user/view" , (req,res)=>{
     res.render('homeUser', {userID:req.session.userID , userName:req.session.userName});
@@ -254,7 +242,6 @@ app.get("/user/profile", (req, res) => {
         userPassword: req.session.userPassword
     });
 });
-
 
 //edit route for user
 app.get('/user/edit', (req, res) => {
@@ -322,8 +309,6 @@ app.patch('/user/edit', (req, res) => {
         });
     });
 });
-
-
 
 //vendor edit 
 app.get("/vendor/view" , (req,res)=>{
@@ -454,7 +439,7 @@ app.get('/products', (req, res) => {
     });
 });
 
-
+//add product
 app.get('/addproduct', (req, res) => {
     const vendorID = req.session.vendorID; // Assuming vendorID is stored in the session
 
@@ -464,10 +449,7 @@ app.get('/addproduct', (req, res) => {
         // Return the list of products
         return res.status(200).jsoxn({ message: 'Products retrieved successfully',products });
     });
-
-
-
-//addproduct route
+// post add product
 app.post('/addproduct', (req, res) => {
     const { productName, price, quantity } = req.body;
     const vendorID = req.session.vendorID; 
@@ -507,20 +489,32 @@ app.post('/addproduct', (req, res) => {
         } else {
             // Product doesn't exist, insert a new product
             const newProductID = uuidv4();
-            const queryInsertProduct = `INSERT INTO product (productID, vendorID,vendorName , productName, price, quantity) VALUES (?, ?, ?, ?, ?,?)`;
+            const queryImageUrl = `SELECT imageUrl FROM fruits_images WHERE name = ?`; // Adjust this query if needed
 
-            db.query(queryInsertProduct, [newProductID, vendorID,vendorName, productName, parseFloat(price), parseInt(quantity)], (err, insertResult) => {
+            db.query(queryImageUrl, [productName], (err, imageResult) => {
                 if (err) {
-                    console.error('Error inserting new product:', err);
-                    return res.status(500).json({ message: 'Failed to add new product', error: err });
+                    console.error('Error querying fruits_images table:', err);
+                    return res.status(500).json({ message: 'Failed to fetch image URL', error: err });
                 }
-                 // Emit an event to notify all connected clients about the new product
-        io.emit('newProduct', { productID: newProductID, productName, price, quantity });
-                return res.status(201).json({ message: 'New product added successfully', productID: newProductID });
+
+                const imageUrl = imageResult.length > 0 ? imageResult[0].imageUrl : null; // Get image URL or set to null
+
+                const queryInsertProduct = `INSERT INTO product (productID, vendorID, vendorName, productName, price, quantity, imageUrl) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+
+                db.query(queryInsertProduct, [newProductID, vendorID, vendorName, productName, parseFloat(price), parseInt(quantity), imageUrl], (err, insertResult) => {
+                    if (err) {
+                        console.error('Error inserting new product:', err);
+                        return res.status(500).json({ message: 'Failed to add new product', error: err });
+                    }
+                    // Emit an event to notify all connected clients about the new product
+                    io.emit('newProduct', { productID: newProductID, productName, price, quantity, imageUrl });
+                    return res.status(201).json({ message: 'New product added successfully', productID: newProductID, imageUrl });
+                });
             });
         }
     });
 });
+
 //io connection 
 io.on('connection', (socket) => {
     console.log('A user connected');
@@ -542,7 +536,6 @@ app.get('/products', (req, res) => {
         res.json(results); // Return all products in JSON format
     });
 });
-
 
 //get user id
 app.get('/check-userid/:userId', (req, res) => {
@@ -571,6 +564,7 @@ app.get('/check-userid/:userId', (req, res) => {
     });
 });
 
+//get vendor id
 app.get('/check-vendorid/:vendorId', (req, res) => {
     const vendorId = req.params.vendorId; // Get userId from URL parameters
 
@@ -598,16 +592,135 @@ app.get('/check-vendorid/:vendorId', (req, res) => {
     });
 });
 
+//subscription
+app.post('/subscription', (req, res) => {
+    const { userID, subs_Type, StartDate, EndDate } = req.body;
 
+    // Check for required fields
+    if (!userID || !subs_Type || !StartDate || !EndDate) {
+        return res.status(400).send('All fields are required!'); // Send a 400 Bad Request
+    }
 
-
-
-server.listen(3000, () => {
-    console.log('Server is running on port 3000');
+    // Insert the new subscription into the database
+    const query = 'INSERT INTO Subscription (userID, subs_Type, StartDate, EndDate) VALUES (?, ?, ?, ?)';
+    db.query(query, [userID, subs_Type, StartDate, EndDate], (error, results) => {
+        if (error) {
+            console.error('Error saving subscription:', error);
+            return res.status(500).json({ message: 'Error saving subscription' });
+        }
+        // Get the generated subs_ID
+        const subsID = results.insertId;
+        
+        // Redirect or send success response
+        res.status(201).json({ message: 'Subscription saved successfully!', id: results.insertId , subsID});
+    });
 });
 
 
+app.post('/subscription_products', (req, res) => {
+    console.log('Received request:', req.body);
+    const { subsID, productID, quantity } = req.body;
 
+    console.log('Received cart data:', req.body);  // Log incoming data for debugging
+
+    if (!subsID || !productID || !quantity) {
+        return res.status(400).send('All fields are required');  // Return error if any field is missing
+    }
+
+    const query = `INSERT INTO Subscription_Products (subs_ID, productID, quantity) VALUES (?, ?, ?)`;
+
+    db.query(query, [subsID, productID, quantity], (err, result) => {
+        if (err) {
+            console.error('Error adding product to subscription:', err);  // Log error if query fails
+            res.status(500).send('Error adding product');
+        } else {
+            console.log('Product added to subscription:', result);  // Log successful insert
+            res.status(200).send('Product added to subscription');
+        }
+    });
+});
+//for all vendors
+app.get('/vendors/details', (req, res) => {
+    const sql = 'SELECT VendorID , VendorName  FROM Vendors';
+    db.query(sql, (err, results) => {
+      if (err) throw err;
+      res.json(results);
+    });
+  });
+
+//vendor details with particular id 
+app.get('/vendors/:vendorID', (req, res) => {
+    const vendorID = req.params.vendorID;
+    console.log(vendorID);
+    const query = 'SELECT * FROM Vendors WHERE vendorID = ?';
+    
+    db.query(query, [vendorID], (err, results) => {
+      if (err) {
+        return res.status(500).send(err);
+      }
+      if (results.length === 0) {
+        return res.status(404).send({ message: 'Vendor not found' });
+      }
+      res.json(results[0]); // Send back the vendor data
+    });
+  });
+  
+  // Route to fetch all reviews
+app.get('/reviews', (req, res) => {
+    const query = 'SELECT * FROM reviews ORDER BY created_at DESC';
+    db.query(query, (err, results) => {
+      if (err) {
+        console.error('Error fetching reviews:', err);
+        return res.status(500).json({ error: 'Failed to fetch reviews' });
+      }
+      res.json(results); // Send back the reviews as JSON
+    });
+  });
+  //post requets for review
+  app.post("/reviews", (req, res) => {
+    const { name, email, rating, review } = req.body;
+  
+    // Validate input
+    if (!name || !email || !rating || !review) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
+  
+    // Prepare SQL query
+    const sql = "INSERT INTO reviews (userName, userEmail, rating, review) VALUES (?, ?, ?, ?)";
+    
+    db.query(sql, [name, email, rating, review], (err, result) => {
+      if (err) {
+        console.error("Error inserting review: ", err);
+        return res.status(500).json({ message: "Error inserting review" });
+      }
+      res.status(200).json({ message: "Review submitted successfully!", reviewId: result.insertId });
+    });
+  });
+
+//reviews for vendor
+
+app.get("/reviews/vendor", (req, res) => {
+    const vendorID = req.query.vendorID;
+  
+    if (!vendorID) {
+      return res.status(400).json({ message: "Vendor ID is required." });
+    }
+  
+    const sql = "SELECT * FROM reviews WHERE vendorID = ? ORDER BY created_at DESC";
+  
+    db.query(sql, [vendorID], (err, results) => {
+      if (err) {
+        console.error("Error fetching reviews: ", err);
+        return res.status(500).json({ message: "Error fetching reviews" });
+      }
+  
+      res.status(200).json(results);
+    });
+  });
+  
+server.listen(3000, () => {
+    console.log('Server is running on port 3000');
+});
 
 // Logout route
 app.get('/logout', (req, res) => {
