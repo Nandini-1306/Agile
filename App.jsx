@@ -18,6 +18,17 @@ import ViewOrders from './Components/ViewOrders';
 import AddProduct from './Components/AddProduct';
 import Invoice from './Components/invoice';
 import { Toaster } from 'react-hot-toast';
+import Subscription_Product_list from './Components/Subscription_Product_list';
+import Subscription_FruitSection from './Components/Subscription_FruitSection';
+import Subscription_VeggieSection from './Components/Subscription_VeggieSection';
+import Subscription_cart from './Components/Subscription_cart'; 
+import MySubscription from './Components/mysubscription'; // Updated import
+import Review from './Components/Review';
+import Vendor from './Components/Vendor';
+import VendorList from './Components/VendorList';
+import VendorReview from './Components/VendorReview';
+
+
 
 
   function App() {
@@ -68,6 +79,7 @@ function handleLogout() {
       <Route path="/cart" element={<Cart cartItems={cartItems} removeFromCart={removeFromCart} clearCart={clearCart}/>} />
       <Route path="/vendor/edit" element={<EditProfileVendor />} />
       <Route path="/cart" element={<Cart />} />
+      <Route path="/subscription_cart" element={<Subscription_cart cartItems={cartItems} removeFromCart={removeFromCart} clearCart={clearCart} />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/register/vendor" element={<VendorSignup />} />
       <Route path="/register/user" element={<Signup />} /> 
@@ -82,6 +94,17 @@ function handleLogout() {
       <Route path="/vieworders" element={<ViewOrders />} />
       <Route path="/addproduct" element={<AddProduct />} />
       <Route path="/invoice" element={<Invoice />} />
+      <Route path="/subscription_Product_list" element={<Subscription_Product_list />} />
+      <Route path="/subscription_FruitSection" element={<Subscription_FruitSection />} />
+                <Route path="/subscription_VeggieSection" element={<Subscription_VeggieSection  />} />
+                {/* <Route path="/payment" element={<Payment />} /> */}
+                <Route path="/mysubscription" element={<MySubscription />} /> 
+                <Route path="/review" element={<Review/>}/>
+                <Route path="/vendor/:vendorID" element={<Vendor />} />
+                <Route path="/vendors/details" element={<VendorList />} />
+                <Route path="/reviews/vendors" element={<VendorReview />} />
+
+
     </Routes>
   </>
   )
