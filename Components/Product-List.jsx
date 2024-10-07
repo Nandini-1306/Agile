@@ -1,19 +1,20 @@
+
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { io } from 'socket.io-client';
-
-const socket = io('http://localhost:3000'); // Adjust based on your backend URL
 
 const ProductList = () => {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [productName, setProductName] = useState('');
+    const [price, setPrice] = useState('');
+    const [quantity, setQuantity] = useState('');
 
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const response = await axios.get('http://localhost:3000/products'); // Adjusted endpoint
-                console.log('Fetched products:', response.data); // Log the response data
-                const productsData = Array.isArray(response.data) ? response.data : response.data.products || []; // Adjust as necessary
+                const response = await axios.get('http://localhost:3000/products'); // Change endpoint to fetch products
+                console.log('Fetched products:', response.data);
+                const productsData = Array.isArray(response.data) ? response.data : response.data.products || [];
                 setProducts(productsData);
             } catch (error) {
                 console.error('Error fetching products:', error);
@@ -23,33 +24,55 @@ const ProductList = () => {
         };
 
         fetchProducts();
-        
-        // Listen for new product events
-        socket.on('newProduct', (newProduct) => {
-            setProducts((prevProducts) => {
-                const existingProductIndex = prevProducts.findIndex(product => product.productID === newProduct.productID);
-                if (existingProductIndex !== -1) {
-                    // Product exists, update the quantity
-                    const updatedProducts = [...prevProducts];
-                    updatedProducts[existingProductIndex].quantity += newProduct.quantity;
-                    updatedProducts[existingProductIndex].isNew = false; // Mark as updated
-                    return updatedProducts;
-                } else {
-                    // New product, add it to the list
-                    return [...prevProducts, { ...newProduct, isNew: true }]; // Mark as new
-                }
-            });
-        });
-
-        // Clean up the socket listener on component unmount
-        return () => {
-            socket.off('newProduct');
-        };
     }, []);
+
+    const handleAddProduct = async (e) => {
+        e.preventDefault();
+        try {
+            const response = await axios.post('http://localhost:3000/add-product', {
+                productName,
+                price,
+                quantity,
+            });
+            console.log('Product added:', response.data);
+            // Add the new product to the existing products list
+            setProducts((prevProducts) => [...prevProducts, response.data.product]);
+            // Reset form fields
+            setProductName('');
+            setPrice('');
+            setQuantity('');
+        } catch (error) {
+            console.error('Error adding product:', error);
+        }
+    };
 
     return (
         <div style={styles.productList}>
             <h2 style={styles.title}>Product List</h2>
+            <form onSubmit={handleAddProduct} style={styles.form}>
+                <input
+                    type="text"
+                    placeholder="Product Name"
+                    value={productName}
+                    onChange={(e) => setProductName(e.target.value)}
+                    required
+                />
+                <input
+                    type="number"
+                    placeholder="Price"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    required
+                />
+                <input
+                    type="number"
+                    placeholder="Quantity"
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                    required
+                />
+                <button type="submit">Add Product</button>
+            </form>
             {loading ? (
                 <p style={styles.loadingText}>Loading products...</p>
             ) : Array.isArray(products) && products.length > 0 ? (
@@ -57,64 +80,17 @@ const ProductList = () => {
                     {products.map((product) => (
                         <div style={styles.productCard} key={product.productID}>
                             <h3 style={styles.productName}>{product.productName}</h3>
+                            {/* Display product image */}
+                            {product.imageURL && <img src={product.imageURL} alt={product.productName} style={styles.productImage} />}
                             <p style={styles.productInfo}>Price: ${product.price}</p>
                             <p style={styles.productInfo}>Quantity: {product.quantity}</p>
-                            {product.isNew && <span style={styles.newTag}>New!</span>} {/* New tag */}
+                            {product.isNew && <span style={styles.newTag}>New!</span>}
                         </div>
                     ))}
-
                 </div>
             ) : (
                 <p style={styles.noProductsText}>No products available.</p>
             )}
-            <button className="add-to-cart-btn" onClick={() => handleAddToCart({ name: products.productName, quantity: products.quantity, price: products.price })}>
-                                    Add to Cart
-             </button>
-            <style>{`
-                .product-list {
-                    padding: 20px;
-                    background-color: #343a40; /* Dark background for contrast */
-                    border-radius: 8px;
-                    max-width: 1200px;
-                    margin: auto;
-                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-                    color: white; /* Set font color to white */
-                }
-
-                .product-card {
-                    background-color: #495057; /* Slightly lighter for contrast */
-                    border-radius: 8px;
-                    padding: 20px;
-                    margin-bottom: 20px;
-                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-                    position: relative; /* For positioning the tag */
-                }
-
-                .product-card h3 {
-                    margin: 0 0 10px 0;
-                    color: #ffffff; /* White color for product names */
-                }
-
-                .product-info {
-                    margin: 5px 0;
-                    color: #f8f9fa; /* Light color for product info */
-                }
-                
-                .loading-text, .no-products-text {
-                    color: #ffffff; /* White color for loading and no products text */
-                }
-
-                .newTag {
-                    position: absolute;
-                    top: 10px;
-                    right: 10px;
-                    background-color: #28a745; /* Green background for new tag */
-                    color: white;
-                    padding: 5px;
-                    border-radius: 5px;
-                    font-size: 0.8rem;
-                }
-            `}</style>
         </div>
     );
 };
@@ -122,12 +98,12 @@ const ProductList = () => {
 const styles = {
     productList: {
         padding: '20px',
-        backgroundColor: '#343a40', // Dark background
+        backgroundColor: '#343a40',
         borderRadius: '8px',
         maxWidth: '1200px',
         margin: 'auto',
         boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
-        color: 'white', // White font color
+        color: 'white',
     },
     title: {
         fontSize: '2.5rem',
@@ -135,35 +111,50 @@ const styles = {
         textAlign: 'center',
     },
     productCard: {
-        backgroundColor: '#495057', // Slightly lighter card background
+        backgroundColor: '#495057',
         borderRadius: '8px',
         padding: '20px',
         marginBottom: '20px',
         boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
-        position: 'relative', // Position for the new tag
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
     },
     productName: {
         margin: '0 0 10px 0',
     },
     productInfo: {
         margin: '5px 0',
-        color: '#f8f9fa', // Light color for product info
+        color: '#f8f9fa',
     },
     loadingText: {
-        color: 'white', // White for loading text
+        color: 'white',
     },
     noProductsText: {
-        color: 'white', // White for no products text
+        color: 'white',
     },
     newTag: {
         position: 'absolute',
         top: '10px',
         right: '10px',
-        backgroundColor: '#28a745', // Green background for new tag
+        backgroundColor: '#28a745',
         color: 'white',
         padding: '5px',
         borderRadius: '5px',
         fontSize: '0.8rem',
+    },
+    productImage: {
+        width: '60px',
+        height: '60px',
+        objectFit: 'cover',
+        borderRadius: '8px',
+        marginLeft: '10px',
+    },
+    form: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        marginBottom: '20px',
     },
 };
 
