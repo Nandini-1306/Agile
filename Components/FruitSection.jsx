@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect } from 'react';
 import './FruitSection.css';
 import DashboardNavbar from './DashboardNavbar.jsx';
@@ -11,7 +13,8 @@ function FruitSection({ addToCart, clearCart }) {
     const navigate = useNavigate();
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [quantities, setQuantities] = useState({}); 
+    const [quantities, setQuantities] = useState({});
+    const [searchQuery, setSearchQuery] = useState(''); // State for search query
 
     const fetchProducts = async () => {
         try {
@@ -64,14 +67,8 @@ function FruitSection({ addToCart, clearCart }) {
         console.log("Selected Quantity:", selectedQuantity);
         if (selectedQuantity > product.quantity) {
             toast.error('Selected quantity exceeds available stock.');
-            return; 
+            return;
         }
-
-        console.log("Adding to cart:", {
-            name: product.productName,
-            quantity: selectedQuantity,
-            price: product.price,
-        });
 
         addToCart({
             name: product.productName,
@@ -82,7 +79,7 @@ function FruitSection({ addToCart, clearCart }) {
     };
 
     const handleQuantityChange = (productID, value) => {
-        if (value < 1) return; 
+        if (value < 1) return;
         setQuantities((prevQuantities) => ({
             ...prevQuantities,
             [productID]: Math.min(value, products.find(p => p.productID === productID)?.quantity || 0)
@@ -94,15 +91,30 @@ function FruitSection({ addToCart, clearCart }) {
         fetchProducts(); 
     };
 
+    // Filter products based on the search query
+    const filteredProducts = products.filter(product =>
+        product.productName.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     return (
         <>
             <DashboardNavbar />
             <div style={styles.productList}>
                 <h2 style={styles.title}>Product List</h2>
+                
+                {/* Search Bar */}
+                <input
+                    type="text"
+                    placeholder="Search products..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)} // Update search query state
+                    style={styles.searchInput}
+                />
+
                 {loading ? (
                     <p style={styles.loadingText}>Loading products...</p>
-                ) : products.length > 0 ? (
-                    products.map((product) => (
+                ) : filteredProducts.length > 0 ? (
+                    filteredProducts.map((product) => (
                         <div style={styles.productCard} key={product.productID}>
                             <h3 style={styles.productName}>{product.productName}</h3>
                             <img src={product.imageURL || 'Fruit/defaultImage.jpg'} alt={product.productName} style={styles.productImage} />
@@ -204,6 +216,15 @@ const styles = {
         margin: '10px 0',
         padding: '5px',
     },
+    searchInput: {
+        width: '100%',
+        padding: '10px',
+        borderRadius: '4px',
+        border: '1px solid #ccc',
+        marginBottom: '20px',
+        fontSize: '1rem',
+    }
 };
 
-export default FruitSection; 
+export default FruitSection;
+
