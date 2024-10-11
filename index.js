@@ -6,10 +6,11 @@ const app = express();
 const bodyParser = require('body-parser');                           
 const methodOverride = require('method-override');
 const cors = require('cors');
-const {v4: uuidv4} = require('uuid');
+const {v4: uuid} = require('uuid');
 const http = require('http');
 const socketIo = require('socket.io');
 const server = http.createServer(app);
+const {v4: uuidv4} = require('uuid');
 
 app.use(cors({
 
@@ -81,7 +82,7 @@ app.post('/register/user', (req, res) => {
     }
     
     // Insert the new user into the database
-    db.query('INSERT INTO user (userID, userName, userEmail, userPassword, userPhoneNumber, userAddress) VALUES (?, ?, ?, ?, ?, ?)', 
+   db.query('INSERT INTO user (userID, userName, userEmail, userPassword, userPhoneNumber, userAddress) VALUES (?, ?, ?, ?, ?, ?)', 
 [userID, userName, userEmail, userPassword, userPhoneNumber, userAddress], 
 (err, result) => {
     if (err) {
@@ -108,7 +109,7 @@ app.post('/register/user', (req, res) => {
         
 });
 //adding new vendor
-app.post('/register/vendor', (req, res) => {
+app.post('/register/vendor',  (req, res) => {
     const { vendorID, vendorName, vendorPhoneNumber, vendorAddress, vendorPassword, vendorEmail } = req.body;
 
     if (!vendorID || !vendorName || !vendorPhoneNumber || !vendorAddress || !vendorPassword || !vendorEmail) {
@@ -116,7 +117,7 @@ app.post('/register/vendor', (req, res) => {
     }
 
     // Insert the new vendor into the database
-    db.query(
+   db.query(
         'INSERT INTO Vendors (vendorID, vendorName, vendorPhoneNumber, vendorAddress, vendorPassword, vendorEmail) VALUES (?, ?, ?, ?, ?, ?)', 
         [vendorID, vendorName, vendorPhoneNumber, vendorAddress, vendorPassword, vendorEmail], 
         (err, result) => {
@@ -130,7 +131,7 @@ app.post('/register/vendor', (req, res) => {
 });
 
 //user login
-app.post('/login/user', (req, res) => {
+app.post('/login/user',  (req, res) => {
     const { userEmail, userPassword } = req.body;
 
     console.log('Request Body:', req.body);
@@ -138,7 +139,7 @@ app.post('/login/user', (req, res) => {
     console.log('Password entered:', userPassword);
 
     // Query database to find the user by email
-    db.query('SELECT * FROM user WHERE userEmail = ?', [userEmail], (err, results) => {
+   db.query('SELECT * FROM user WHERE userEmail = ?', [userEmail], (err, results) => {
         if (err) {
             console.error('Database error:', err);
             return res.status(500).json({ message: 'An error occurred, please try again.' });
@@ -174,11 +175,11 @@ app.post('/login/user', (req, res) => {
 });
 
 //vendor login
-app.post('/login/vendor', (req, res) => {
+app.post('/login/vendor',  (req, res) => {
     const { vendorEmail, vendorPassword } = req.body;
 
     // Query to fetch the vendor's details based on the provided email
-    db.query('SELECT * FROM Vendors WHERE vendorEmail = ?', [vendorEmail], (err, results) => {
+   db.query('SELECT * FROM Vendors WHERE vendorEmail = ?', [vendorEmail], (err, results) => {
         if (err) {
             console.error('Database error:', err);
             return res.status(500).send('An error occurred, please try again.'); // Return a 500 status for server error
@@ -256,7 +257,7 @@ app.get('/user/edit', (req, res) => {
 });
 
 //pacth edit route for user
-app.patch('/user/edit', (req, res) => {
+app.patch('/user/edit',  (req, res) => {
 
     console.log('Received request body:', req.body);
     console.log('Session at /user/edit:', req.session);
@@ -269,7 +270,7 @@ app.patch('/user/edit', (req, res) => {
 
     const query = 'SELECT * FROM user WHERE userID = ?';
 
-    db.query(query, [newUserID], (error, results) => {
+   db.query(query, [newUserID],  (error, results) => {
         if (error) {
             console.error('Database error:', error);
             return res.status(500).json({ message: 'An error occurred, please try again.' });
@@ -289,7 +290,7 @@ app.patch('/user/edit', (req, res) => {
 
         const updateQuery = 'UPDATE user SET userName = ?, userEmail = ?, userAddress = ?, userPhoneNumber = ? WHERE userID = ?';
         
-        db.query(updateQuery, [newUserName, newUserEmail, newUserAddress, newUserPhoneNumber, newUserID], (updateError) => {
+       db.query(updateQuery, [newUserName, newUserEmail, newUserAddress, newUserPhoneNumber, newUserID], (updateError) => {
             if (updateError) {
                 console.error('Update error:', updateError);
                 return res.status(500).json({ message: 'An error occurred, please try again.' });
@@ -359,7 +360,7 @@ app.patch('/vendor/edit', (req, res) => {
 
     const query = 'SELECT * FROM Vendors WHERE vendorID = ?';
     
-    db.query(query, [newVendorID], (error, results) => { // Use newVendorID here
+   db.query(query, [newVendorID],  (error, results) => { // Use newVendorID here
         if (error) {
             console.error('Database error:', error);
             return res.status(500).json({ message: 'An error occurred, please try again.' });
@@ -379,7 +380,7 @@ app.patch('/vendor/edit', (req, res) => {
 
         const updateQuery = 'UPDATE Vendors SET vendorName = ?, vendorEmail = ?, vendorAddress = ?, vendorPhoneNumber = ? WHERE vendorID = ?';
         
-        db.query(updateQuery, [newVendorName, newVendorEmail, newVendorAddress, newVendorPhoneNumber, newVendorID], (updateError) => {
+       db.query(updateQuery, [newVendorName, newVendorEmail, newVendorAddress, newVendorPhoneNumber, newVendorID], (updateError) => {
             if (updateError) {
                 console.error('Update error:', updateError);
                 return res.status(500).json({ message: 'An error occurred, please try again.' });
@@ -401,7 +402,7 @@ app.patch('/vendor/edit', (req, res) => {
 });
 
 // Route to update the total amount for the user
-app.post('/cart', (req, res) => {
+app.post('/cart',  (req, res) => {
     const userID = req.session.userID; // Access userID from session
     const { TotalAmount } = req.body; // Destructure TotalAmount from request body
 
@@ -414,7 +415,7 @@ app.post('/cart', (req, res) => {
     }
 
     // Update the total amount in the Cart table
-    db.query('UPDATE Cart SET TotalAmount = ? WHERE userID = ?', [TotalAmount, userID], (err, result) => {
+   db.query('UPDATE Cart SET TotalAmount = ? WHERE userID = ?', [TotalAmount, userID], (err, result) => {
         if (err) {
             console.error('Error updating total amount:', err);
             return res.status(500).json({ message: 'Error updating total amount' });
@@ -429,9 +430,9 @@ app.post('/cart', (req, res) => {
     });
 });
 //fetch from product databse 
-app.get('/products', (req, res) => {
+app.get('/products',  (req, res) => {
     // Assuming you have a database connection set up
-    db.query('SELECT * FROM product', (err, products) => {
+   db.query('SELECT * FROM product', (err, products) => {
         if (err) {
             return res.status(500).json({ error: 'Failed to fetch products' });
         }
@@ -439,81 +440,104 @@ app.get('/products', (req, res) => {
     });
 });
 
-//add product
-app.get('/addproduct', (req, res) => {
+
+// app.get('/addproduct', (req, res) => {
+//     const vendorID = req.session.vendorID; // Assuming vendorID is stored in the session
+
+//     if (!vendorID) {
+//         return res.status(401).json({ message: 'Unauthorized. Vendor not logged in.' });
+//     }
+//         // Return the list of products
+//         return res.status(200).jsoxn({ message: 'Products retrieved successfully',product });
+//     });
+app.get('/addproduct',  (req, res) => {
     const vendorID = req.session.vendorID; // Assuming vendorID is stored in the session
 
     if (!vendorID) {
         return res.status(401).json({ message: 'Unauthorized. Vendor not logged in.' });
     }
-        // Return the list of products
-        return res.status(200).jsoxn({ message: 'Products retrieved successfully',products });
-    });
-// post add product
-app.post('/addproduct', (req, res) => {
-    const { productName, price, quantity } = req.body;
-    const vendorID = req.session.vendorID; 
-    const vendorName = req.session.vendorName;
-    console.log(vendorID);
 
-    // Check if the vendor is logged in
-    if (!vendorID || !vendorName) {
-        return res.status(401).json({ message: 'Unauthorized. Vendor not logged in.' });
-    }
+    // SQL query to fetch products for the logged-in vendor
+    const query = 'SELECT * FROM product WHERE vendorID = ?';
 
-    // Check for missing required fields
-    if (!productName || !price || !quantity) {
-        return res.status(400).json({ message: 'Missing required product fields.' });
-    }
-
-    // Check if the product already exists for this vendor
-    const queryCheckProduct = `SELECT * FROM product WHERE vendorID = ? AND productName = ?`;
-    db.query(queryCheckProduct, [vendorID, productName], (err, result) => {
+   db.query(query, [vendorID], (err, results) => {
         if (err) {
-            console.error('Error querying database:', err);
-            return res.status(500).json({ message: 'Database error', error: err });
+            console.error('Error fetching products:', err);
+            return res.status(500).json({ message: 'Internal Server Error' });
         }
 
-        if (result.length > 0) {
-            // Product exists, update the quantity
-            const updatedQuantity = result[0].quantity + parseInt(quantity);
-            const queryUpdateProduct = `UPDATE product SET quantity = ? WHERE productID = ?`;
-
-            db.query(queryUpdateProduct, [updatedQuantity, result[0].productID], (err, updateResult) => {
-                if (err) {
-                    console.error('Error updating product quantity:', err);
-                    return res.status(500).json({ message: 'Failed to update product quantity', error: err });
-                }
-                return res.status(200).json({ message: 'Product quantity updated successfully', productID: result[0].productID });
-            });
-        } else {
-            // Product doesn't exist, insert a new product
-            const newProductID = uuidv4();
-            const queryImageUrl = `SELECT imageUrl FROM fruits_images WHERE name = ?`; // Adjust this query if needed
-
-            db.query(queryImageUrl, [productName], (err, imageResult) => {
-                if (err) {
-                    console.error('Error querying fruits_images table:', err);
-                    return res.status(500).json({ message: 'Failed to fetch image URL', error: err });
-                }
-
-                const imageUrl = imageResult.length > 0 ? imageResult[0].imageUrl : null; // Get image URL or set to null
-
-                const queryInsertProduct = `INSERT INTO product (productID, vendorID, vendorName, productName, price, quantity, imageUrl) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-
-                db.query(queryInsertProduct, [newProductID, vendorID, vendorName, productName, parseFloat(price), parseInt(quantity), imageUrl], (err, insertResult) => {
-                    if (err) {
-                        console.error('Error inserting new product:', err);
-                        return res.status(500).json({ message: 'Failed to add new product', error: err });
-                    }
-                    // Emit an event to notify all connected clients about the new product
-                    io.emit('newProduct', { productID: newProductID, productName, price, quantity, imageUrl });
-                    return res.status(201).json({ message: 'New product added successfully', productID: newProductID, imageUrl });
-                });
-            });
+        if (results.length === 0) {
+            return res.status(404).json({ message: 'No products found for this vendor.' });
         }
+
+        // Return the list of productsw
+        return res.status(200).json({ message: 'Products retrieved successfully', products: results });
     });
 });
+
+app.post('/addproduct',  (req, res) => {
+    const { vendorID, productName, price, quantity, unit } = req.body;
+    const productID = uuidv4();
+
+    console.log('Received vendorID:', vendorID);
+
+    // Convert quantity to a number
+    const newQuantity = Number(quantity);
+
+    // Query to fetch imageURL based on productName
+    const imageQuery = 'SELECT imageURL FROM fruits_images WHERE name = ?';
+    
+   db.query(imageQuery, [productName],  (err, imageResults) => {
+        if (err) {
+            return res.status(500).json({ error: 'Error fetching image URL', details: err.message });
+        }
+
+        if (imageResults.length === 0) {
+            return res.status(404).json({ error: 'Image not found for the given product name' });
+        }
+
+        const imageURL = imageResults[0].imageURL;
+
+        // Query to check if the product already exists
+        const checkQuery = 'SELECT * FROM product WHERE productName = ? AND vendorID = ?';
+
+       db.query(checkQuery, [productName, vendorID],  (err, results) => {
+            if (err) {
+                return res.status(500).json({ error: 'Error checking product', details: err.message });
+            }
+
+            if (results.length > 0) {
+                const existingProduct = results[0];
+                if (existingProduct.price === price && existingProduct.quantity === newQuantity) {
+                    return res.status(400).json({ error: 'Product already added with the same details' });
+                } else {
+                    // Update existing product by adding the new quantity
+                    const updatedQuantity = existingProduct.quantity + newQuantity; // Add new quantity to existing quantity
+                    const updateQuery = 'UPDATE product SET price = ?, quantity = ?, imageURL = ? WHERE productName = ? AND vendorID = ?';
+                    
+                    db.query(updateQuery, [price, updatedQuantity, imageURL, productName, vendorID], (err, result) => {
+                        if (err) {
+                            return res.status(500).json({ error: 'Error updating product', details: err.message });
+                        }
+                        return res.json({ message: 'Product updated successfully' });
+                    });
+                }
+            } else {
+                // Insert new product
+                const insertQuery = 'INSERT INTO product (productID, vendorID, productName, price, quantity, unit, imageURL) VALUES (?, ?, ?, ?, ?, ?, ?)';
+               db.query(insertQuery, [productID, vendorID, productName, price, newQuantity, unit, imageURL], (err, result) => {
+                    if (err) {
+                        return res.status(500).json({ error: 'Error adding product', details: err.message });
+                    }
+                    res.json({ message: 'Product added successfully' });
+                });
+            }
+        });
+    });
+});
+
+
+
 
 //io connection 
 io.on('connection', (socket) => {
@@ -526,9 +550,9 @@ io.on('connection', (socket) => {
 });
 
 // Route to get all products
-app.get('/products', (req, res) => {
+app.get('/products',  (req, res) => {
     console.log("helloo");
-    db.query('SELECT * FROM product', (err, results) => {
+   db.query('SELECT * FROM product', (err, results) => {
         if (err) {
             console.error('Database error:', err);
             return res.status(500).json({ message: 'An error occurred while fetching products.' });
@@ -538,7 +562,7 @@ app.get('/products', (req, res) => {
 });
 
 //get user id
-app.get('/check-userid/:userId', (req, res) => {
+app.get('/check-userid/:userId',  (req, res) => {
     const userId = req.params.userId; // Get userId from URL parameters
 
     if (!userId) {
@@ -548,7 +572,7 @@ app.get('/check-userid/:userId', (req, res) => {
     // SQL query to check if userId exists in the database
     const query = 'SELECT COUNT(*) AS count FROM user  WHERE userID = ?';
 
-    db.query(query, [userId], (err, results) => {
+   db.query(query, [userId], (err, results) => {
         if (err) {
             console.error('Error executing query:', err);
             return res.status(500).json({ error: 'Database error' });
@@ -565,7 +589,7 @@ app.get('/check-userid/:userId', (req, res) => {
 });
 
 //get vendor id
-app.get('/check-vendorid/:vendorId', (req, res) => {
+app.get('/check-vendorid/:vendorId',  (req, res) => {
     const vendorId = req.params.vendorId; // Get userId from URL parameters
 
     if (!vendorId) {
@@ -576,7 +600,7 @@ app.get('/check-vendorid/:vendorId', (req, res) => {
     // SQL query to check if userId exists in the database
     const query = 'SELECT COUNT(*) AS count FROM Vendors  WHERE vendorID = ?';
 
-    db.query(query, [vendorId], (err, results) => {
+   db.query(query, [vendorId], (err, results) => {
         if (err) {
             console.error('Error executing query:', err);
             return res.status(500).json({ error: 'Database error' });
@@ -593,7 +617,7 @@ app.get('/check-vendorid/:vendorId', (req, res) => {
 });
 
 //subscription
-app.post('/subscription', (req, res) => {
+app.post('/subscription',  (req, res) => {
     const { userID, subs_Type, StartDate, EndDate } = req.body;
 
     // Check for required fields
@@ -603,7 +627,7 @@ app.post('/subscription', (req, res) => {
 
     // Insert the new subscription into the database
     const query = 'INSERT INTO Subscription (userID, subs_Type, StartDate, EndDate) VALUES (?, ?, ?, ?)';
-    db.query(query, [userID, subs_Type, StartDate, EndDate], (error, results) => {
+   db.query(query, [userID, subs_Type, StartDate, EndDate], (error, results) => {
         if (error) {
             console.error('Error saving subscription:', error);
             return res.status(500).json({ message: 'Error saving subscription' });
@@ -617,7 +641,7 @@ app.post('/subscription', (req, res) => {
 });
 
 
-app.post('/subscription_products', (req, res) => {
+app.post('/subscription_products',  (req, res) => {
     console.log('Received request:', req.body);
     const { subsID, productID, quantity } = req.body;
 
@@ -629,7 +653,7 @@ app.post('/subscription_products', (req, res) => {
 
     const query = `INSERT INTO Subscription_Products (subs_ID, productID, quantity) VALUES (?, ?, ?)`;
 
-    db.query(query, [subsID, productID, quantity], (err, result) => {
+   db.query(query, [subsID, productID, quantity], (err, result) => {
         if (err) {
             console.error('Error adding product to subscription:', err);  // Log error if query fails
             res.status(500).send('Error adding product');
@@ -640,21 +664,21 @@ app.post('/subscription_products', (req, res) => {
     });
 });
 //for all vendors
-app.get('/vendors/details', (req, res) => {
-    const sql = 'SELECT VendorID , VendorName  FROM Vendors';
-    db.query(sql, (err, results) => {
+app.get('/vendors/details',  (req, res) => {
+    const sql = 'SELECT vendorID , vendorName , vendorAddress FROM Vendors';
+   db.query(sql, (err, results) => {
       if (err) throw err;
       res.json(results);
     });
   });
 
 //vendor details with particular id 
-app.get('/vendors/:vendorID', (req, res) => {
+app.get('/vendors/:vendorID',  (req, res) => {
     const vendorID = req.params.vendorID;
     console.log(vendorID);
     const query = 'SELECT * FROM Vendors WHERE vendorID = ?';
     
-    db.query(query, [vendorID], (err, results) => {
+   db.query(query, [vendorID], (err, results) => {
       if (err) {
         return res.status(500).send(err);
       }
@@ -666,7 +690,7 @@ app.get('/vendors/:vendorID', (req, res) => {
   });
   
   // Route to fetch all reviews
-app.get('/reviews', (req, res) => {
+app.get('/reviews',  (req, res) => {
     const query = 'SELECT * FROM reviews ORDER BY created_at DESC';
     db.query(query, (err, results) => {
       if (err) {
@@ -677,7 +701,7 @@ app.get('/reviews', (req, res) => {
     });
   });
   //post requets for review
-  app.post("/reviews", (req, res) => {
+  app.post("/reviews",  (req, res) => {
     const { name, email, rating, review } = req.body;
   
     // Validate input
@@ -688,7 +712,7 @@ app.get('/reviews', (req, res) => {
     // Prepare SQL query
     const sql = "INSERT INTO reviews (userName, userEmail, rating, review) VALUES (?, ?, ?, ?)";
     
-    db.query(sql, [name, email, rating, review], (err, result) => {
+   db.query(sql, [name, email, rating, review], (err, result) => {
       if (err) {
         console.error("Error inserting review: ", err);
         return res.status(500).json({ message: "Error inserting review" });
@@ -699,7 +723,7 @@ app.get('/reviews', (req, res) => {
 
 //reviews for vendor
 
-app.get("/reviews/vendor", (req, res) => {
+app.get("/reviews/vendor",  (req, res) => {
     const vendorID = req.query.vendorID;
   
     if (!vendorID) {
@@ -708,7 +732,7 @@ app.get("/reviews/vendor", (req, res) => {
   
     const sql = "SELECT * FROM reviews WHERE vendorID = ? ORDER BY created_at DESC";
   
-    db.query(sql, [vendorID], (err, results) => {
+   db.query(sql, [vendorID], (err, results) => {
       if (err) {
         console.error("Error fetching reviews: ", err);
         return res.status(500).json({ message: "Error fetching reviews" });
@@ -717,7 +741,98 @@ app.get("/reviews/vendor", (req, res) => {
       res.status(200).json(results);
     });
   });
-  
+//orders
+app.post('/orders',  (req, res) => {
+    console.log("Received order request:", req.body); // Log incoming request
+
+    const { userID, vendorID, OrderDate, DeliveryDate, Status, TotalAmount } = req.body;
+    const orderID = uuid();
+
+    console.log('Order Details:', { orderID, userID, vendorID, OrderDate, DeliveryDate, Status, TotalAmount });
+    
+    try {
+        // Test database connection
+        db.query('SELECT 1'); // Simple test query
+
+        const query = `INSERT INTO Orders (orderID, userID, vendorID, OrderDate, DeliveryDate, Status, TotalAmount)
+                       VALUES (?, ?, ?, ?, ?, ?, ?)`;
+        const values = [orderID, userID, vendorID, OrderDate, DeliveryDate, Status, TotalAmount];
+
+        // Execute the query with await
+        db.query(query, values);
+        res.status(201).json({ message: 'Order created successfully' });
+    } catch (error) {
+        console.error('Error creating order:', error.message); // Log specific error message
+        res.status(500).json({ message: 'Failed to create order', error: error.message }); // Send error details to the client
+    }
+});
+// tch orders for a specific vendor
+
+app.get('/orders', (req, res) => {
+    const { vendor } = req.query;
+    const trimmedVendor = vendor?.trim() || ''; // Use optional chaining and default to empty string
+    console.log(trimmedVendor);
+
+    if (!trimmedVendor) {
+        return res.status(400).json({ message: 'Vendor ID is required.' });
+    }
+
+    // Use backticks for template literals to properly include the status
+    db.execute('SELECT * FROM Orders WHERE Status = ? AND vendorID = ?', ['Pending', trimmedVendor], (error, results) => {
+        if (error) {
+            console.error('Error fetching vendor orders:', error.message);
+            return res.status(500).json({ message: 'Failed to fetch vendor orders', error: error.message });
+        }
+
+        console.log("Results:", results); // This will log the fetched rows
+
+        if (!results || results.length === 0) {
+            return res.status(404).json({ message: 'No orders found for this vendor.' });
+        }
+
+        res.status(200).json(results); // Send the fetched rows as response
+    });
+});
+
+
+
+// Endpoint to update order status
+app.patch('/orders/:orderID', (req, res) => {
+    const orderID = req.params.orderID;
+    const { Status } = req.body; // Expecting the status to be passed in the body
+    console.log(orderID);
+    console.log(Status);
+    // Update the order in the MySQL database
+    const query = 'UPDATE Orders SET Status = ? WHERE orderID = ?';
+    db.execute(query, [Status, orderID], (error, results) => {
+        if (error) {
+            console.error('Error updating order:', error);
+            return res.status(500).send('Internal Server Error');
+        }
+        if (results.affectedRows === 0) {
+            return res.status(404).send('Order not found');
+        }
+        res.status(200).json({ orderID: orderID, Status }); // Send back the updated status
+    });
+});
+
+app.get('/completed-orders', (req, res) => {
+    const vendorID = req.query.vendor;  // Get vendorID from query params
+
+    if (!vendorID) {
+        return res.status(400).json({ error: 'Vendor ID is required' });
+    }
+
+    const query = 'SELECT * FROM Orders WHERE vendorID = ? AND Status = ?';
+    db.execute(query, [vendorID, 'Done'], (error, results) => {
+        if (error) {
+            console.error('Error fetching completed orders:', error);
+            return res.status(500).send('Internal Server Error');
+        }
+        res.status(200).json(results);  // Send back the completed orders
+    });
+});
+
 server.listen(3000, () => {
     console.log('Server is running on port 3000');
 });
