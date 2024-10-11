@@ -10,6 +10,13 @@ function VendorNavbar() {
             <li>
                 <a href="/vendorProfile">Profile</a>
             </li>
+            <li>
+               <a href="/reviews/vendors">Reviews</a>
+            </li>
+            <li>
+               <a href="/orders/done">Orders</a>
+            </li>
+
         </>
     );
 
