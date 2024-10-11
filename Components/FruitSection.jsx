@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from 'react';
 import './FruitSection.css';
 import DashboardNavbar from './DashboardNavbar.jsx';
@@ -7,14 +6,16 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 import { toast } from "react-hot-toast";
+
 const socket = io('http://localhost:3000');
 
-function FruitSection({ addToCart, clearCart }) {
+function FruitSection({ addToCart , updateCart }) {
     const navigate = useNavigate();
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [quantities, setQuantities] = useState({});
-    const [searchQuery, setSearchQuery] = useState(''); // State for search query
+    const [searchQuery, setSearchQuery] = useState('');
+    const [cartItems, setCartItems] = useState([]); // Manage cartItems locally
 
     const fetchProducts = async () => {
         try {
@@ -64,34 +65,57 @@ function FruitSection({ addToCart, clearCart }) {
 
     const handleAddToCart = (product) => {
         const selectedQuantity = quantities[product.productID];
-        console.log("Selected Quantity:", selectedQuantity);
+    
+        // Check if the selected quantity exceeds available stock
         if (selectedQuantity > product.quantity) {
             toast.error('Selected quantity exceeds available stock.');
             return;
         }
-
-        addToCart({
-            name: product.productName,
-            quantity: selectedQuantity,
-            price: product.price,
-        });
-        toast.success(`${product.productName} added to cart`);
+    
+        // Check if the product is already in the cart
+        const existingCartItemIndex = cartItems.findIndex(item => item.productID === product.productID);
+    
+        if (existingCartItemIndex !== -1) {
+            // If the product is already in the cart, update its quantity
+            const updatedCartItems = cartItems.map((item, index) => {
+                if (index === existingCartItemIndex) {
+                    return {
+                        ...item,
+                        quantity: item.quantity + selectedQuantity // Add the selected quantity
+                    };
+                }
+                return item;
+            });
+    
+            updateCart(updatedCartItems); // Update the cart in the parent component
+            toast.success(`Increased quantity of ${product.productName} in the cart`);
+        } else {
+            // If the product is not in the cart, add it as a new item
+            const newCartItem = {
+                productID: product.productID,
+                name: product.productName,
+                quantity: selectedQuantity,
+                price: product.price,
+                image: product.imageURL
+            };
+            addToCart(newCartItem); // Function to add new item to cart
+            toast.success(`${product.productName} added to cart`);
+        }
     };
-
+    
+    
     const handleQuantityChange = (productID, value) => {
         if (value < 1) return;
         setQuantities((prevQuantities) => ({
             ...prevQuantities,
-            [productID]: Math.min(value, products.find(p => p.productID === productID)?.quantity || 0)
+            [productID]: Math.min(value, products.find(p => p.productID === productID)?.unit || 0)
         }));
     };
 
     const handleProceedToBuy = () => {
-        clearCart();
-        fetchProducts(); 
+        navigate('/cart');
     };
 
-    // Filter products based on the search query
     const filteredProducts = products.filter(product =>
         product.productName.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -101,13 +125,11 @@ function FruitSection({ addToCart, clearCart }) {
             <DashboardNavbar />
             <div style={styles.productList}>
                 <h2 style={styles.title}>Product List</h2>
-                
-                {/* Search Bar */}
                 <input
                     type="text"
                     placeholder="Search products..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)} // Update search query state
+                    onChange={(e) => setSearchQuery(e.target.value)}
                     style={styles.searchInput}
                 />
 
@@ -118,7 +140,7 @@ function FruitSection({ addToCart, clearCart }) {
                         <div style={styles.productCard} key={product.productID}>
                             <h3 style={styles.productName}>{product.productName}</h3>
                             <img src={product.imageURL || 'Fruit/defaultImage.jpg'} alt={product.productName} style={styles.productImage} />
-                            <p style={styles.productInfo}>Price: ₹{product.price} per piece</p>
+                            <p style={styles.productInfo}>Price: ₹{product.price} per {product.unit}</p>
                             <p style={styles.productInfo}>Available Quantity: {product.quantity}</p>
                             <label htmlFor={`quantity-${product.productID}`} style={styles.quantityLabel}>
                                 Select Quantity:
@@ -136,7 +158,7 @@ function FruitSection({ addToCart, clearCart }) {
                             <button
                                 className="add-to-cart-btn"
                                 onClick={() => handleAddToCart(product)}
-                                disabled={quantities[product.productID] < 1 || quantities[product.productID] > product.quantity} // Disable if invalid quantity
+                                disabled={quantities[product.productID] < 1 || quantities[product.productID] > product.unit}
                             >
                                 Add to Cart
                             </button>
@@ -145,7 +167,7 @@ function FruitSection({ addToCart, clearCart }) {
                 ) : (
                     <p style={styles.noProductsText}>No products available.</p>
                 )}
-                <button onClick={handleProceedToBuy}>Proceed to Buy</button>
+                <button onClick={handleProceedToBuy}>Go To Cart</button>
             </div>
         </>
     );
@@ -226,5 +248,7 @@ const styles = {
     }
 };
 
+
 export default FruitSection;
+
 
